@@ -53,7 +53,8 @@ public class RManager {
 		RNode node = resourcePool.getNode(provider, evaluation);
 		return node;
 	}
-	public void releaseNode(RTaskFeedback feedback) {
+	public void releaseNode(RNode node) {
+		resourcePool.releaseNode(node);
 	}
 	//For test only;
 	public static void main(String[] args) {
@@ -66,9 +67,9 @@ public class RManager {
 		RManager manager = new RManager(0);
 		manager.addProvider(ec2Provider);
 		RNode node = manager.getNode(task);
-		System.out.println("Now u got a EC2 instance with IP address of : " + node.getIP());
-		RTaskFeedback feedback = new RTaskFeedback();
-		//releaseNode();
+		System.out.println("Now u got a EC2 instance. So...it's time to kill it!");
+//		RTaskFeedback feedback = new RTaskFeedback();
+		manager.releaseNode(node);
 	}
 	//Utilities used in RM;
 }

@@ -18,4 +18,10 @@ public class OpenStackAdapter extends RAdapter {
 		return null;
 	}
 
+	@Override
+	public void releaseNodeFromProvider(RNode node) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

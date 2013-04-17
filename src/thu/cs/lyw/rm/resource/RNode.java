@@ -1,12 +1,15 @@
 package thu.cs.lyw.rm.resource;
 
-import thu.cs.lyw.rm.util.ProviderType;
+import java.util.HashMap;
+import thu.cs.lyw.rm.util.Provider;
 
 public class RNode {
 	private String IP;
-	private ProviderType providerType;
-	public RNode(ProviderType providerType){
-		this.providerType = providerType;
+	private HashMap<String, Object> properties;
+	private Provider provider;
+	public RNode(Provider provider){
+		this.provider = provider;
+		properties = new HashMap<String, Object>();
 	}
 	public void setIP(String IP){
 		this.IP = IP;
@@ -14,7 +17,13 @@ public class RNode {
 	public String getIP(){
 		return IP;
 	}
-	public ProviderType getProviderType(){
-		return providerType;
+	public Provider getProvider(){
+		return provider;
+	}
+	public void addProperty(String key, Object value){
+		properties.put(key, value);
+	}
+	public Object getProperty(String key){
+		return properties.get(key);
 	}
 }

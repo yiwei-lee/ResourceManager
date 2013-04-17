@@ -7,11 +7,18 @@ import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.AuthorizeSecurityGroupIngressRequest;
 import com.amazonaws.services.ec2.model.CreateKeyPairRequest;
+import com.amazonaws.services.ec2.model.CreateKeyPairResult;
 import com.amazonaws.services.ec2.model.CreateSecurityGroupRequest;
-import com.amazonaws.services.ec2.model.Instance;
+import com.amazonaws.services.ec2.model.DescribeInstanceStatusRequest;
+import com.amazonaws.services.ec2.model.DescribeInstanceStatusResult;
+import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
+import com.amazonaws.services.ec2.model.DescribeInstancesResult;
 import com.amazonaws.services.ec2.model.IpPermission;
+import com.amazonaws.services.ec2.model.KeyPair;
 import com.amazonaws.services.ec2.model.RunInstancesRequest;
 import com.amazonaws.services.ec2.model.RunInstancesResult;
+import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
+
 import thu.cs.lyw.rm.evaluation.REvaluation;
 import thu.cs.lyw.rm.resource.RNode;
 import thu.cs.lyw.rm.util.Provider;
@@ -49,12 +56,17 @@ public class EC2Adapter extends RAdapter {
 			CreateKeyPairRequest createKeyPairRequest = 
 					new CreateKeyPairRequest();
 			createKeyPairRequest.withKeyName("RM.EC2.Test");
+			String privateKey = null;
 			try{
-				ec2.createKeyPair(createKeyPairRequest);
+				CreateKeyPairResult createKeyPairResult = ec2.createKeyPair(createKeyPairRequest);
+				KeyPair keyPair = new KeyPair();
+		    	keyPair = createKeyPairResult.getKeyPair();	
+				privateKey = keyPair.getKeyMaterial();
 			}catch(AmazonServiceException ase){
 				System.out.println(ase.getMessage());
 			}
 			provider.addProperty("AmazonEC2", ec2);
+			provider.addProperty("privateKey", privateKey);
 		} catch (AmazonServiceException ase) {
 			System.out.println("Caught Exception: " + ase.getMessage());
 			System.out.println("Reponse Status Code: " + ase.getStatusCode());
@@ -64,7 +76,7 @@ public class EC2Adapter extends RAdapter {
 	}
 	@Override
 	public RNode getNodeFromProvider(Provider provider, REvaluation evaluation) {
-		RNode node = new RNode(provider.getType());
+		RNode node = new RNode(provider);
 		RunInstancesRequest runInstancesRequest = new RunInstancesRequest()
 		.withImageId(evaluation.image.getImageName())
 		.withInstanceType("t1.micro")
@@ -74,8 +86,33 @@ public class EC2Adapter extends RAdapter {
 		.withSecurityGroups("RMSecurityGroup");
 		AmazonEC2 ec2 = (AmazonEC2)provider.getProperty("AmazonEC2");
 		RunInstancesResult runInstancesResult = ec2.runInstances(runInstancesRequest);
-		Instance instance = runInstancesResult.getReservation().getInstances().get(0);
-		node.setIP(instance.getPublicIpAddress());
+		String instanceId = runInstancesResult.getReservation().getInstances().get(0).getInstanceId();
+		System.out.println("\tCurrent state of the newly created instance is : 'pending'.\n" +
+				"\tWaiting for it to become 'running'.");
+		DescribeInstanceStatusRequest discribeStatusRequest = new DescribeInstanceStatusRequest().withInstanceIds(instanceId);
+		DescribeInstanceStatusResult describeStatusResult = ec2.describeInstanceStatus(discribeStatusRequest);
+		while (describeStatusResult.getInstanceStatuses().size() == 0){
+			describeStatusResult = ec2.describeInstanceStatus(discribeStatusRequest);
+			try {
+				Thread.sleep(5000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		DescribeInstancesRequest discribeInstanceRequest = new DescribeInstancesRequest().withInstanceIds(instanceId);
+		DescribeInstancesResult describeInstanceStatusResult = ec2.describeInstances(discribeInstanceRequest);
+		node.setIP(describeInstanceStatusResult.getReservations().get(0).getInstances().get(0).getPublicIpAddress());
+		node.addProperty("instanceId", instanceId);
+		System.out.println("\tPublic IP of the newly created EC2 instance is : " + node.getIP() + ".");
 		return node;
+	}
+	@Override
+	public void releaseNodeFromProvider(RNode node) {
+		Provider provider = node.getProvider();
+		AmazonEC2 ec2 = (AmazonEC2)provider.getProperty("AmazonEC2");
+		TerminateInstancesRequest terminateInstancesRequest = new TerminateInstancesRequest().
+				withInstanceIds((String)node.getProperty("instanceId"));
+		ec2.terminateInstances(terminateInstancesRequest);
+		System.out.println("\tPublic IP of the newly terminated EC2 instance is : " + node.getIP() + ".");
 	}
 }

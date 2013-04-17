@@ -21,6 +21,10 @@ public class RPool {
 		RNode node = adapter.getNodeFromProvider(provider, evaluation);
 		return node;
 	}
+	public void releaseNode(RNode node){
+		RAdapter adapter = getAdapter(node.getProvider().getType());
+		adapter.releaseNodeFromProvider(node);
+	}
 	private RAdapter getAdapter(ProviderType providerType){
 		RAdapter adapter = adapterMap.get(providerType);
 		if (adapter == null){
