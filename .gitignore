@@ -166,3 +166,5 @@ pip-log.txt
 /provider_vcmware.properties
 /third-party
 /lib
+*.pem
+*.ppk
