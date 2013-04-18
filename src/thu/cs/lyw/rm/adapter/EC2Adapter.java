@@ -96,6 +96,7 @@ public class EC2Adapter extends RAdapter {
 			try {
 				Thread.sleep(5000);
 			} catch (InterruptedException e) {
+				System.out.println("Who dares to interrupt me?");
 				e.printStackTrace();
 			}
 		}
