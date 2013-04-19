@@ -1,16 +1,24 @@
 package thu.cs.lyw.rm.util;
 
 import java.util.HashMap;
-import java.util.Map;
 
 @SuppressWarnings("unused")
 public class Provider {
 	private ProviderType providerType;
 	private String username;
+	private String password;
 	private HashMap<String, Object> properties;
 	public Provider (ProviderType providerType){
 		this.providerType = providerType;
 		properties = new HashMap<String, Object>();
+		username = null;
+		password = null;
+	}
+	public Provider (ProviderType providerType, String username, String password){
+		this.providerType = providerType;
+		properties = new HashMap<String, Object>();
+		this.username = username;
+		this.password = password;
 	}
 	public void addProperty(String key, Object value){
 		properties.put(key, value);

@@ -18,7 +18,6 @@ import com.amazonaws.services.ec2.model.KeyPair;
 import com.amazonaws.services.ec2.model.RunInstancesRequest;
 import com.amazonaws.services.ec2.model.RunInstancesResult;
 import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
-
 import thu.cs.lyw.rm.evaluation.REvaluation;
 import thu.cs.lyw.rm.resource.RNode;
 import thu.cs.lyw.rm.util.Provider;
