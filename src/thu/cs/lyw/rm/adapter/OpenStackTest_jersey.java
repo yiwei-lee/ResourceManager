@@ -22,8 +22,7 @@ public class OpenStackTest_jersey {
 			ClientResponse response = webResource.type("application/json").accept("application/json")
 					.post(ClientResponse.class, input);
 			checkResponseCode(response, 200);
-			String output = response.getEntity(String.class);
-			JSONObject json = new JSONObject(output);
+			JSONObject json = response.getEntity(JSONObject.class);
 			token = json.getJSONObject("access").getJSONObject("token").getString("id");
 			
 			//Second step : get tenant ID;
@@ -32,8 +31,7 @@ public class OpenStackTest_jersey {
 					.header("Conection", "keep-alive")
 					.get(ClientResponse.class);
 			checkResponseCode(response, 200);
-			output = response.getEntity(String.class);
-			json = new JSONObject(output);
+			json = response.getEntity(JSONObject.class);
 			String tenantId = json.getJSONArray("tenants").getJSONObject(0).getString("id");
 			
 			//Third step : get computer address header;
@@ -44,8 +42,7 @@ public class OpenStackTest_jersey {
 			response = webResource.type("application/json").accept("application/json")
 					.post(ClientResponse.class, input);
 			checkResponseCode(response, 200);
-			output = response.getEntity(String.class);
-			json = new JSONObject(output);
+			json = response.getEntity(JSONObject.class);
 			token = json.getJSONObject("access").getJSONObject("token").getString("id");
 			JSONArray jsonArray = json.getJSONObject("access").getJSONArray("serviceCatalog");
 			for (int i = 0 ; i < jsonArray.length() ; i++){
@@ -67,10 +64,22 @@ public class OpenStackTest_jersey {
 					.put("max_count", "1").put("key_name", "RM.OpenStack.Test"));
 			response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)
 					.post(ClientResponse.class, json);
-			output = response.getEntity(String.class);
-			json = new JSONObject(output);
+			json = response.getEntity(JSONObject.class);
 			String serverId = json.getJSONObject("server").getString("id");
 			System.out.println("Server ID : " + serverId);
+			//Get ip;
+			System.out.print("Building server");
+			while (!getServerStatus(serverId).equals("ACTIVE")){
+				System.out.print(".");
+				Thread.sleep(5000);
+			}
+			System.out.println();
+			webResource = client.resource(computeHeader + "/servers/"+serverId+"/ips");
+			response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)
+					.get(ClientResponse.class);
+			json = response.getEntity(JSONObject.class);
+			String ip = json.getJSONObject("addresses").getJSONArray("private").getJSONObject(1).getString("addr");		
+			System.out.println("Server IP : " + ip);
 			//So...time to kill!
 			webResource = client.resource(computeHeader + "/servers/"+serverId);
 			response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)
@@ -93,7 +102,6 @@ public class OpenStackTest_jersey {
 				.get(ClientResponse.class);
 		String output = response.getEntity(String.class);
 		JSONObject json = new JSONObject(output);
-//		System.out.println(json);
 		JSONArray array = json.getJSONArray("flavors");
 		System.out.println(array.length() + " flavors found.");
 	}
@@ -103,8 +111,16 @@ public class OpenStackTest_jersey {
 				.get(ClientResponse.class);
 		String output = response.getEntity(String.class);
 		JSONObject json = new JSONObject(output);
-//		System.out.println(json);
 		JSONArray array = json.getJSONArray("images");
 		System.out.println(array.length() + " images found.");
+	}
+	private static String getServerStatus(String serverId) throws JSONException{
+		String status = null;
+		webResource = client.resource(computeHeader + "/servers/"+serverId);
+		ClientResponse response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)
+				.get(ClientResponse.class);
+		JSONObject json = response.getEntity(JSONObject.class);
+		status = json.getJSONObject("server").getString("status");
+		return status;
 	}
 }
