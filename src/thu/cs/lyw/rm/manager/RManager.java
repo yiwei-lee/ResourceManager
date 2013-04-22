@@ -60,7 +60,7 @@ public class RManager {
 		ec2Provider.addProperty("accessKey", "AKIAJOCSWO3APJUNZEGQ");
 		ec2Provider.addProperty("secretKey", "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");
 		//Generate task;
-		RTask task = new RTask("MICRO", "ami-56e6a404");
+		RTask task = new RTask("EC2", "MICRO", "ami-56e6a404");
 		RManager manager = new RManager(0);
 		manager.addProvider(ec2Provider);
 		RNode node = manager.getNode(task);
