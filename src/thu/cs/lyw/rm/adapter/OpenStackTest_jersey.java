@@ -3,6 +3,10 @@ package thu.cs.lyw.rm.adapter;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+
+import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.Session;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
@@ -80,12 +84,22 @@ public class OpenStackTest_jersey {
 			json = response.getEntity(JSONObject.class);
 			String ip = json.getJSONObject("addresses").getJSONArray("private").getJSONObject(1).getString("addr");		
 			System.out.println("Server IP : " + ip);
+			//Try to connect;
+			JSch jsch = new JSch();
+			jsch.addIdentity("RM.OpenStack.Test.pem");
+			Session session = jsch.getSession("ubuntu", ip, 22);
+			session.setConfig("StrictHostKeyChecking", "no");
+			session.connect();
+			Channel channel = session.openChannel("shell");
+			channel.setOutputStream(System.out);
+			channel.setInputStream(System.in);
+			channel.connect();
 			//So...time to kill!
-			webResource = client.resource(computeHeader + "/servers/"+serverId);
-			response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)
-					.delete(ClientResponse.class);
-			checkResponseCode(response, 204);
-			System.out.println("Server deleted.");
+//			webResource = client.resource(computeHeader + "/servers/"+serverId);
+//			response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)
+//					.delete(ClientResponse.class);
+//			checkResponseCode(response, 204);
+//			System.out.println("Server deleted.");
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
