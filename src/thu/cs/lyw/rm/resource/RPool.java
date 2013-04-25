@@ -18,7 +18,13 @@ public class RPool {
 	}
 	public RNode getNode(Provider provider, REvaluation evaluation){
 		RAdapter adapter = getAdapter(provider.getType());
-		RNode node = adapter.getNodeFromProvider(provider, evaluation);
+		RNode node = null;
+		try {
+			node = adapter.getNodeFromProvider(provider, evaluation);
+		} catch (Exception e) {
+			System.err.println("Failed to get node from provider : ");
+			e.printStackTrace();
+		}
 		return node;
 	}
 	public void releaseNode(RNode node){

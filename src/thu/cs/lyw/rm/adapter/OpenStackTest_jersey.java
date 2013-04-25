@@ -3,10 +3,6 @@ package thu.cs.lyw.rm.adapter;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-
-import com.jcraft.jsch.Channel;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.Session;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
@@ -21,8 +17,8 @@ public class OpenStackTest_jersey {
 			//First step : get token;
 			webResource = client
 					.resource("https://region-a.geo-1.identity.hpcloudsvc.com:35357/v2.0/tokens");
-			String input = "{\"auth\":{\"apiAccessKeyCredentials\":{\"accessKey\":" +
-					"\"D7WAWP2LBYLGRZ9FCLNE\",\"secretKey\":\"+fmjdLc4UBvn/gsfEYWnD5AcbOuhEsP30SbJRc/c\"}}}";
+			String input = "{\"auth\":{\"passwordCredentials\":{\"username\":" +
+					"\"lywthu\",\"password\":\"liyiwei!@#900614\"}}}";
 			ClientResponse response = webResource.type("application/json").accept("application/json")
 					.post(ClientResponse.class, input);
 			checkResponseCode(response, 200);
@@ -57,14 +53,14 @@ public class OpenStackTest_jersey {
 				}
 			}
 			if (computeHeader == null) System.err.println("Something's wrong!");
-			listFlavors();
-			listImages();
+//			listFlavors();
+//			listImages();
 			System.out.println("Tenant ID : " + tenantId);
 			System.out.println("Token : " + token);
 			//Final step : create a server;
 			webResource = client.resource(computeHeader + "/servers");
 			json = new JSONObject().put("server", new JSONObject().put("flavorRef", "100")
-					.put("imageRef", "81078").put("name", "server-no-1").put("min_count", "1")
+					.put("imageRef", "84536").put("name", "server-no-1").put("min_count", "1")
 					.put("max_count", "1").put("key_name", "RM.OpenStack.Test"));
 			response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)
 					.post(ClientResponse.class, json);
@@ -84,16 +80,6 @@ public class OpenStackTest_jersey {
 			json = response.getEntity(JSONObject.class);
 			String ip = json.getJSONObject("addresses").getJSONArray("private").getJSONObject(1).getString("addr");		
 			System.out.println("Server IP : " + ip);
-			//Try to connect;
-			JSch jsch = new JSch();
-			jsch.addIdentity("RM.OpenStack.Test.pem");
-			Session session = jsch.getSession("ubuntu", ip, 22);
-			session.setConfig("StrictHostKeyChecking", "no");
-			session.connect();
-			Channel channel = session.openChannel("shell");
-			channel.setOutputStream(System.out);
-			channel.setInputStream(System.in);
-			channel.connect();
 			//So...time to kill!
 //			webResource = client.resource(computeHeader + "/servers/"+serverId);
 //			response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)
@@ -110,6 +96,7 @@ public class OpenStackTest_jersey {
 			     + response.getStatus());
 		}
 	}
+	@SuppressWarnings("unused")
 	private static void listFlavors() throws JSONException{
 		webResource = client.resource(computeHeader + "/flavors/detail");
 		ClientResponse response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)
@@ -119,6 +106,7 @@ public class OpenStackTest_jersey {
 		JSONArray array = json.getJSONArray("flavors");
 		System.out.println(array.length() + " flavors found.");
 	}
+	@SuppressWarnings("unused")
 	private static void listImages() throws JSONException{
 		webResource = client.resource(computeHeader + "/images");
 		ClientResponse response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)

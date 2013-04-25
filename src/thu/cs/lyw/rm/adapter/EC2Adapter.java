@@ -25,6 +25,8 @@ import thu.cs.lyw.rm.util.Provider;
 public class EC2Adapter extends RAdapter {
 	@Override
 	public void initProvider(Provider provider) {
+		if (provider.isInit()) return;
+		else provider.setInit();
 		try{
 			AWSCredentials myCredential = new BasicAWSCredentials((String)provider.getProperty("accessKey"), (String)provider.getProperty("secretKey"));
 			AmazonEC2 ec2 = new AmazonEC2Client(myCredential);
@@ -75,6 +77,7 @@ public class EC2Adapter extends RAdapter {
 	}
 	@Override
 	public RNode getNodeFromProvider(Provider provider, REvaluation evaluation) {
+		if (!provider.isInit()) initProvider(provider);
 		RNode node = new RNode(provider);
 		RunInstancesRequest runInstancesRequest = new RunInstancesRequest()
 		.withImageId(evaluation.image.getImageName())

@@ -1,7 +1,6 @@
 package thu.cs.lyw.rm.evaluation;
 
 import thu.cs.lyw.rm.manager.RTask;
-import thu.cs.lyw.rm.util.NodeType;
 import thu.cs.lyw.rm.util.Strategy;
 
 public class REvaluator {
@@ -14,10 +13,7 @@ public class REvaluator {
 	}
 	//Get evaluation;
 	public REvaluation evaluate(RTask task){
-		REvaluation evaluation = new REvaluation();
-		NodeType perferredType = task.getPerferredType();
-		evaluation.type = perferredType;
-		evaluation.image = task.getImage();
+		REvaluation evaluation = new REvaluation(task);
 		return evaluation;
 	}
 	//Sets and gets;

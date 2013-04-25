@@ -1,29 +1,155 @@
 package thu.cs.lyw.rm.adapter;
 
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+
 import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
+
 import thu.cs.lyw.rm.evaluation.REvaluation;
 import thu.cs.lyw.rm.resource.RNode;
 import thu.cs.lyw.rm.util.Provider;
 
 public class OpenStackAdapter extends RAdapter {
 	private static Client client  = Client.create();
-	
+	private static WebResource webResource;
 	@Override
 	public void initProvider(Provider provider) {
-		// TODO Auto-generated method stub
-
+		if (provider.isInit()) return;
+		else provider.setInit();
+		try{
+			//First step : get token;
+			webResource = client
+					.resource("https://region-a.geo-1.identity.hpcloudsvc.com:35357/v2.0/tokens");
+			String input = "{\"auth\":{\"passwordCredentials\":{\"username\":" +
+					"\"" + provider.getProperty("username") + "\",\"password\":" +
+					"\"" + provider.getProperty("password") + "\"}}}";
+			ClientResponse response = webResource.type("application/json").accept("application/json")
+					.post(ClientResponse.class, input);
+			checkResponseCode(response, 200);
+			JSONObject json = response.getEntity(JSONObject.class);
+			String token = json.getJSONObject("access").getJSONObject("token").getString("id");
+			
+			//Second step : get tenant ID;
+			webResource = client.resource("https://region-a.geo-1.identity.hpcloudsvc.com:35357/v2.0/tenants");
+			response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)
+					.header("Conection", "keep-alive")
+					.get(ClientResponse.class);
+			checkResponseCode(response, 200);
+			json = response.getEntity(JSONObject.class);
+			String tenantId = json.getJSONArray("tenants").getJSONObject(0).getString("id");
+			
+			//Third step : get computer address header;
+			webResource = client.resource("https://region-a.geo-1.identity.hpcloudsvc.com:35357/v2.0/tokens");
+			input = "{\"auth\":{\"apiAccessKeyCredentials\":{\"accessKey\":" +
+					"\"D7WAWP2LBYLGRZ9FCLNE\",\"secretKey\":\"+fmjdLc4UBvn/gsfEYWnD5AcbOuhEsP30SbJRc/c\"},\"tenantId\":" +
+					"\""+tenantId+"\"}}";
+			response = webResource.type("application/json").accept("application/json")
+					.post(ClientResponse.class, input);
+			checkResponseCode(response, 200);
+			json = response.getEntity(JSONObject.class);
+			token = json.getJSONObject("access").getJSONObject("token").getString("id");
+			String computeHeader = null;
+			JSONArray jsonArray = json.getJSONObject("access").getJSONArray("serviceCatalog");
+			for (int i = 0 ; i < jsonArray.length() ; i++){
+				json = jsonArray.getJSONObject(i);
+				if (!json.getString("type").equals("compute")) continue;
+				else{
+					computeHeader = (json.getJSONArray("endpoints").getJSONObject(0).getString("publicURL"));
+				}
+			}
+			provider.addProperty("token", token);
+			provider.addProperty("header", computeHeader);
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Override
-	public RNode getNodeFromProvider(Provider provider, REvaluation evaluation) {
-		// TODO Auto-generated method stub
-		return null;
+	public RNode getNodeFromProvider(Provider provider, REvaluation evaluation) throws Exception {
+		if (!provider.isInit()) initProvider(provider);
+		RNode node = new RNode(provider);
+		String token = (String) provider.getProperty("token");
+		String header = (String) provider.getProperty("header");
+		webResource = client.resource(header + "/servers");
+		JSONObject json = new JSONObject().put("server", new JSONObject()
+				.put("flavorRef", "100").put("imageRef", "84536").put("name", "server-no-1")
+				.put("min_count", "1").put("max_count", "1")
+				.put("key_name", evaluation.task.keyName)
+				.put("security_groups",new JSONArray().put(new JSONObject().put("name", evaluation.task.securityGroup))));
+		ClientResponse response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)
+				.post(ClientResponse.class, json);
+		json = response.getEntity(JSONObject.class);
+		String serverId = json.getJSONObject("server").getString("id");
+		//Get IP;
+		System.out.print("Building server");
+		while (!getServerStatus(token, header, serverId).equals("ACTIVE")){
+			System.out.print(".");
+			Thread.sleep(5000);
+		}
+		System.out.println();
+		webResource = client.resource(header + "/servers/"+serverId+"/ips");
+		response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)
+				.get(ClientResponse.class);
+		json = response.getEntity(JSONObject.class);
+		String ip = json.getJSONObject("addresses").getJSONArray("private").getJSONObject(1).getString("addr");		
+		System.out.println("Server IP : " + ip);
+		node.setIP(ip);
+		node.addProperty("serverId", serverId);
+		return node;
 	}
 
 	@Override
 	public void releaseNodeFromProvider(RNode node) {
-		// TODO Auto-generated method stub
-		
+		Provider provider = node.getProvider();
+		String token = (String) provider.getProperty("token");
+		String header = (String) provider.getProperty("header");
+		String serverId = (String) node.getProperty("serverId");
+		webResource = client.resource(header + "/servers/"+serverId);
+		ClientResponse response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)
+				.delete(ClientResponse.class);
+		checkResponseCode(response, 204);
+		System.out.println("Server deleted.");
 	}
-
+	public JSONArray listFlavors(Provider provider) throws JSONException{
+		String token = (String) provider.getProperty("token");
+		String header = (String) provider.getProperty("header");
+		webResource = client.resource(header + "/flavors/detail");
+		ClientResponse response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)
+				.get(ClientResponse.class);
+		String output = response.getEntity(String.class);
+		JSONObject json = new JSONObject(output);
+		JSONArray array = json.getJSONArray("flavors");
+		System.out.println(array.length() + " flavors found.");
+		return array;
+	}
+	public JSONArray listImages(Provider provider) throws JSONException{
+		String token = (String) provider.getProperty("token");
+		String header = (String) provider.getProperty("header");
+		webResource = client.resource(header + "/images");
+		ClientResponse response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)
+				.get(ClientResponse.class);
+		String output = response.getEntity(String.class);
+		JSONObject json = new JSONObject(output);
+		JSONArray array = json.getJSONArray("images");
+		System.out.println(array.length() + " images found.");
+		return array;
+	}
+	private void checkResponseCode(ClientResponse response, int expectCode){
+		if (response.getStatus() != expectCode) {
+			throw new RuntimeException("Failed : HTTP error code : "
+			     + response.getStatus());
+		}
+	}
+	private String getServerStatus(String token, String header, String serverId) throws JSONException{
+		String status = null;
+		webResource = client.resource(header + "/servers/"+serverId);
+		ClientResponse response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)
+				.get(ClientResponse.class);
+		JSONObject json = response.getEntity(JSONObject.class);
+		status = json.getJSONObject("server").getString("status");
+		return status;
+	}
 }

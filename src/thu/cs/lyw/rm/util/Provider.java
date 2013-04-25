@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 @SuppressWarnings("unused")
 public class Provider {
+	private boolean isInit;
 	private ProviderType providerType;
 	private String username;
 	private String password;
@@ -13,6 +14,7 @@ public class Provider {
 		properties = new HashMap<String, Object>();
 		username = null;
 		password = null;
+		isInit = false;
 	}
 	public Provider (ProviderType providerType, String username, String password){
 		this.providerType = providerType;
@@ -31,5 +33,11 @@ public class Provider {
 	}
 	public ProviderType getType(){
 		return providerType;
+	}
+	public void setInit(){
+		isInit = true;
+	}
+	public boolean isInit(){
+		return isInit;
 	}
 }
