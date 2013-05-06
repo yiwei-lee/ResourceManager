@@ -3,18 +3,18 @@ package thu.cs.lyw.rm.adapter;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-
 import thu.cs.lyw.rm.evaluation.REvaluation;
 import thu.cs.lyw.rm.resource.RNode;
+import thu.cs.lyw.rm.util.NodeType;
 import thu.cs.lyw.rm.util.Provider;
 
 public class OpenStackAdapter extends RAdapter {
 	private static Client client  = Client.create();
 	private static WebResource webResource;
+	private static int serverNo = 0;
 	@Override
 	public void initProvider(Provider provider) {
 		if (provider.isInit()) return;
@@ -41,10 +41,11 @@ public class OpenStackAdapter extends RAdapter {
 			json = response.getEntity(JSONObject.class);
 			String tenantId = json.getJSONArray("tenants").getJSONObject(0).getString("id");
 			
-			//Third step : get computer address header;
+			//Third step : get compute address header;
 			webResource = client.resource("https://region-a.geo-1.identity.hpcloudsvc.com:35357/v2.0/tokens");
-			input = "{\"auth\":{\"apiAccessKeyCredentials\":{\"accessKey\":" +
-					"\"D7WAWP2LBYLGRZ9FCLNE\",\"secretKey\":\"+fmjdLc4UBvn/gsfEYWnD5AcbOuhEsP30SbJRc/c\"},\"tenantId\":" +
+			input = "{\"auth\":{\"passwordCredentials\":{\"username\":" +
+					"\"" + provider.getProperty("username") + "\",\"password\":" +
+					"\"" + provider.getProperty("password") + "\"},\"tenantId\":" +
 					"\""+tenantId+"\"}}";
 			response = webResource.type("application/json").accept("application/json")
 					.post(ClientResponse.class, input);
@@ -60,6 +61,7 @@ public class OpenStackAdapter extends RAdapter {
 					computeHeader = (json.getJSONArray("endpoints").getJSONObject(0).getString("publicURL"));
 				}
 			}
+			assert(computeHeader != null);
 			provider.addProperty("token", token);
 			provider.addProperty("header", computeHeader);
 		}catch(Exception e) {
@@ -68,37 +70,47 @@ public class OpenStackAdapter extends RAdapter {
 	}
 
 	@Override
-	public RNode getNodeFromProvider(Provider provider, REvaluation evaluation) throws Exception {
+	public RNode getNodeFromProvider(Provider provider, REvaluation evaluation){
 		if (!provider.isInit()) initProvider(provider);
 		RNode node = new RNode(provider);
 		String token = (String) provider.getProperty("token");
 		String header = (String) provider.getProperty("header");
 		webResource = client.resource(header + "/servers");
-		JSONObject json = new JSONObject().put("server", new JSONObject()
-				.put("flavorRef", "100").put("imageRef", "84536").put("name", "server-no-1")
-				.put("min_count", "1").put("max_count", "1")
-				.put("key_name", evaluation.task.keyName)
-				.put("security_groups",new JSONArray().put(new JSONObject().put("name", evaluation.task.securityGroup))));
-		ClientResponse response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)
-				.post(ClientResponse.class, json);
-		json = response.getEntity(JSONObject.class);
-		String serverId = json.getJSONObject("server").getString("id");
-		//Get IP;
-		System.out.print("Building server");
-		while (!getServerStatus(token, header, serverId).equals("ACTIVE")){
-			System.out.print(".");
-			Thread.sleep(5000);
+		String flavor = "100";
+		if (evaluation.type == NodeType.MICRO) flavor = "100";
+		try {
+			JSONObject json = new JSONObject().put("server", new JSONObject()
+					.put("flavorRef", flavor).put("imageRef", evaluation.image.getImageName()).put("name", "server-no-"+(serverNo++))
+					.put("min_count", "1").put("max_count", "1")
+					.put("key_name", evaluation.task.keyName));
+//					.put("security_groups",new JSONArray().put(new JSONObject().put("name", evaluation.task.securityGroup))));
+			ClientResponse response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)
+					.post(ClientResponse.class, json);
+			json = response.getEntity(JSONObject.class);
+			String serverId = json.getJSONObject("server").getString("id");
+			//Get IP;
+			System.out.print("OpenStack : Building server");
+			while (!getServerStatus(token, header, serverId).equals("ACTIVE")){
+				Thread.sleep(2500);
+			}
+			System.out.println();
+			webResource = client.resource(header + "/servers/"+serverId+"/ips");
+			response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)
+					.get(ClientResponse.class);
+			json = response.getEntity(JSONObject.class);
+			String ip;
+			ip = json.getJSONObject("addresses").getJSONArray("private").getJSONObject(1).getString("addr");
+			System.out.println("OpenStack : Public IP of the newly created instance is : " + ip + ".");
+			node.setIP(ip);
+			node.addProperty("serverId", serverId);
+			return node;
+		} catch (JSONException e) {
+			System.err.println(provider.getProperty("token"));
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
-		System.out.println();
-		webResource = client.resource(header + "/servers/"+serverId+"/ips");
-		response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)
-				.get(ClientResponse.class);
-		json = response.getEntity(JSONObject.class);
-		String ip = json.getJSONObject("addresses").getJSONArray("private").getJSONObject(1).getString("addr");		
-		System.out.println("Server IP : " + ip);
-		node.setIP(ip);
-		node.addProperty("serverId", serverId);
-		return node;
+		return null;
 	}
 
 	@Override
@@ -111,7 +123,7 @@ public class OpenStackAdapter extends RAdapter {
 		ClientResponse response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)
 				.delete(ClientResponse.class);
 		checkResponseCode(response, 204);
-		System.out.println("Server deleted.");
+		System.out.println("OpenStack : Public IP of the newly terminated instance is : " + node.getIP() + ".");
 	}
 	public JSONArray listFlavors(Provider provider) throws JSONException{
 		String token = (String) provider.getProperty("token");

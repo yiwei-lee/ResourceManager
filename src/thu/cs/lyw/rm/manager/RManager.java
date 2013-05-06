@@ -46,6 +46,10 @@ public class RManager {
 	public RNode getNode(RTask task) {
 		REvaluation evaluation = evaluator.evaluate(task);
 		ArrayList<Provider> providers = providerMap.get(evaluation.provider);
+		if (providers == null){
+			System.err.println("Error : no " + evaluation.provider.toString() + " provider.");
+			return null;
+		}
 		Provider provider = providers.get(0);
 		RNode node = resourcePool.getNode(provider, evaluation);
 		return node;
@@ -53,20 +57,4 @@ public class RManager {
 	public void releaseNode(RNode node) {
 		resourcePool.releaseNode(node);
 	}
-	//For test only;
-	public static void main(String[] args) {
-		//Provider info;
-		Provider ec2Provider = new Provider(ProviderType.EC2);
-		ec2Provider.addProperty("accessKey", "AKIAJOCSWO3APJUNZEGQ");
-		ec2Provider.addProperty("secretKey", "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");
-		//Generate task;
-		RTask task = new RTask("OpenStack", "ami-56e6a404", "MICRO");
-		RManager manager = new RManager(0);
-		manager.addProvider(ec2Provider);
-		RNode node = manager.getNode(task);
-		System.out.println("Now u got a EC2 instance. So...it's time to kill it!");
-//		RTaskFeedback feedback = new RTaskFeedback();
-		manager.releaseNode(node);
-	}
-	//Utilities used in RM;
 }

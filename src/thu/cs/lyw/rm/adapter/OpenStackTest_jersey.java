@@ -53,8 +53,8 @@ public class OpenStackTest_jersey {
 				}
 			}
 			if (computeHeader == null) System.err.println("Something's wrong!");
-//			listFlavors();
-//			listImages();
+			listFlavors();
+			listImages();
 			System.out.println("Tenant ID : " + tenantId);
 			System.out.println("Token : " + token);
 			//Final step : create a server;
@@ -81,11 +81,11 @@ public class OpenStackTest_jersey {
 			String ip = json.getJSONObject("addresses").getJSONArray("private").getJSONObject(1).getString("addr");		
 			System.out.println("Server IP : " + ip);
 			//So...time to kill!
-//			webResource = client.resource(computeHeader + "/servers/"+serverId);
-//			response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)
-//					.delete(ClientResponse.class);
-//			checkResponseCode(response, 204);
-//			System.out.println("Server deleted.");
+			webResource = client.resource(computeHeader + "/servers/"+serverId);
+			response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)
+					.delete(ClientResponse.class);
+			checkResponseCode(response, 204);
+			System.out.println("Server deleted.");
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
@@ -96,7 +96,6 @@ public class OpenStackTest_jersey {
 			     + response.getStatus());
 		}
 	}
-	@SuppressWarnings("unused")
 	private static void listFlavors() throws JSONException{
 		webResource = client.resource(computeHeader + "/flavors/detail");
 		ClientResponse response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)
@@ -106,7 +105,6 @@ public class OpenStackTest_jersey {
 		JSONArray array = json.getJSONArray("flavors");
 		System.out.println(array.length() + " flavors found.");
 	}
-	@SuppressWarnings("unused")
 	private static void listImages() throws JSONException{
 		webResource = client.resource(computeHeader + "/images");
 		ClientResponse response = webResource.type("application/json").accept("application/json").header("X-Auth-Token", token)

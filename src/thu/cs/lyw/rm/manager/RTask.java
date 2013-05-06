@@ -27,7 +27,7 @@ public class RTask {
 		this.providerType = ProviderType.valueOf(providerType);
 		this.perferredType = NodeType.valueOf(perferredType);
 		image = new SystemImage(system);
-		securityGroup = "defalut";
+		securityGroup = "default";
 		keyName = "rm-test";
 		cpu = 0.0;
 		memory = 0.0;

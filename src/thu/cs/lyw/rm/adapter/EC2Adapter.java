@@ -31,32 +31,32 @@ public class EC2Adapter extends RAdapter {
 			AWSCredentials myCredential = new BasicAWSCredentials((String)provider.getProperty("accessKey"), (String)provider.getProperty("secretKey"));
 			AmazonEC2 ec2 = new AmazonEC2Client(myCredential);
 			ec2.setEndpoint("ec2.ap-southeast-1.amazonaws.com");
-			CreateSecurityGroupRequest createSecurityGroupRequest = 
-					new CreateSecurityGroupRequest();
-			createSecurityGroupRequest.withGroupName("RMSecurityGroup")
-					.withDescription("Resource Manager Security Group");
-			try{
-				ec2.createSecurityGroup(createSecurityGroupRequest);
-			}catch(AmazonServiceException ase){
-				System.out.println(ase.getMessage());
-			}
-			IpPermission ipPermission = new IpPermission();
-			ipPermission.withIpRanges("166.111.0.0/16", "166.111.0.0/16")
-				.withIpProtocol("tcp")
-				.withFromPort(22)
-				.withToPort(22);
-			AuthorizeSecurityGroupIngressRequest authorizeSecurityGroupIngressRequest =
-					new AuthorizeSecurityGroupIngressRequest();
-			authorizeSecurityGroupIngressRequest.withGroupName("RMSecurityGroup")
-				.withIpPermissions(ipPermission);
-			try{
-				ec2.authorizeSecurityGroupIngress(authorizeSecurityGroupIngressRequest);
-			}catch(AmazonServiceException ase){
-				System.out.println(ase.getMessage());
-			}
+//			CreateSecurityGroupRequest createSecurityGroupRequest = 
+//					new CreateSecurityGroupRequest();
+//			createSecurityGroupRequest.withGroupName("rm-test")
+//					.withDescription("Resource Manager Security Group");
+//			try{
+//				ec2.createSecurityGroup(createSecurityGroupRequest);
+//			}catch(AmazonServiceException ase){
+//				System.out.println(ase.getMessage());
+//			}
+//			IpPermission ipPermission = new IpPermission();
+//			ipPermission.withIpRanges("166.111.0.0/16", "166.111.0.0/16")
+//				.withIpProtocol("tcp")
+//				.withFromPort(22)
+//				.withToPort(22);
+//			AuthorizeSecurityGroupIngressRequest authorizeSecurityGroupIngressRequest =
+//					new AuthorizeSecurityGroupIngressRequest();
+//			authorizeSecurityGroupIngressRequest.withGroupName("RMSecurityGroup")
+//				.withIpPermissions(ipPermission);
+//			try{
+//				ec2.authorizeSecurityGroupIngress(authorizeSecurityGroupIngressRequest);
+//			}catch(AmazonServiceException ase){
+//				System.out.println(ase.getMessage());
+//			}
 			CreateKeyPairRequest createKeyPairRequest = 
 					new CreateKeyPairRequest();
-			createKeyPairRequest.withKeyName("RM.EC2.Test");
+			createKeyPairRequest.withKeyName("rm-test");
 			String privateKey = null;
 			try{
 				CreateKeyPairResult createKeyPairResult = ec2.createKeyPair(createKeyPairRequest);
@@ -64,7 +64,7 @@ public class EC2Adapter extends RAdapter {
 		    	keyPair = createKeyPairResult.getKeyPair();	
 				privateKey = keyPair.getKeyMaterial();
 			}catch(AmazonServiceException ase){
-				System.out.println(ase.getMessage());
+				System.out.println("EC2 : "+ase.getMessage());
 			}
 			provider.addProperty("AmazonEC2", ec2);
 			provider.addProperty("privateKey", privateKey);
@@ -84,19 +84,19 @@ public class EC2Adapter extends RAdapter {
 		.withInstanceType("t1.micro")
 		.withMinCount(1)
 		.withMaxCount(1)
-		.withKeyName("RM.EC2.Test")
-		.withSecurityGroups("RMSecurityGroup");
+		.withKeyName(evaluation.task.keyName)
+		.withSecurityGroups(evaluation.task.securityGroup);
 		AmazonEC2 ec2 = (AmazonEC2)provider.getProperty("AmazonEC2");
 		RunInstancesResult runInstancesResult = ec2.runInstances(runInstancesRequest);
 		String instanceId = runInstancesResult.getReservation().getInstances().get(0).getInstanceId();
-		System.out.println("\tCurrent state of the newly created instance is : 'pending'.\n" +
-				"\tWaiting for it to become 'running'.");
+		System.out.println("EC2 : Current state of the newly created instance is : 'pending'.\n" +
+				"EC2 : Waiting for it to become 'running'.");
 		DescribeInstanceStatusRequest discribeStatusRequest = new DescribeInstanceStatusRequest().withInstanceIds(instanceId);
 		DescribeInstanceStatusResult describeStatusResult = ec2.describeInstanceStatus(discribeStatusRequest);
 		while (describeStatusResult.getInstanceStatuses().size() == 0){
 			describeStatusResult = ec2.describeInstanceStatus(discribeStatusRequest);
 			try {
-				Thread.sleep(5000);
+				Thread.sleep(2500);
 			} catch (InterruptedException e) {
 				System.out.println("Who dares to interrupt me?");
 				e.printStackTrace();
@@ -106,7 +106,7 @@ public class EC2Adapter extends RAdapter {
 		DescribeInstancesResult describeInstanceStatusResult = ec2.describeInstances(discribeInstanceRequest);
 		node.setIP(describeInstanceStatusResult.getReservations().get(0).getInstances().get(0).getPublicIpAddress());
 		node.addProperty("instanceId", instanceId);
-		System.out.println("\tPublic IP of the newly created EC2 instance is : " + node.getIP() + ".");
+		System.out.println("EC2 : Public IP of the newly created instance is : " + node.getIP() + ".");
 		return node;
 	}
 	@Override
@@ -116,6 +116,6 @@ public class EC2Adapter extends RAdapter {
 		TerminateInstancesRequest terminateInstancesRequest = new TerminateInstancesRequest().
 				withInstanceIds((String)node.getProperty("instanceId"));
 		ec2.terminateInstances(terminateInstancesRequest);
-		System.out.println("\tPublic IP of the newly terminated EC2 instance is : " + node.getIP() + ".");
+		System.out.println("EC2 : Public IP of the newly terminated instance is : " + node.getIP() + ".");
 	}
 }

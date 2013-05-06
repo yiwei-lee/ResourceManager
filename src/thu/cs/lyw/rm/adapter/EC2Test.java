@@ -91,15 +91,15 @@ public class EC2Test
 				System.out.println("Instance ID : " + instance.getInstanceId() + " ; Instance status : "+status);
 				instancesToTerminate.add(instance.getInstanceId());
 			}
-//			System.out.println("----------Terminating----------");
-//			TerminateInstancesRequest term = new TerminateInstancesRequest();
-//			term.setInstanceIds(instancesToTerminate);
-//			ec2.terminateInstances(term);
-//			for (Instance instance : instances){
-//				String status = instance.getState().getName();
-//				if (status.equals("terminated")) continue;
-//				System.out.println("Instance ID : " + instance.getInstanceId() + " ; Instance status : "+status);
-//			}
+			System.out.println("----------Terminating----------");
+			TerminateInstancesRequest term = new TerminateInstancesRequest();
+			term.setInstanceIds(instancesToTerminate);
+			ec2.terminateInstances(term);
+			for (Instance instance : instances){
+				String status = instance.getState().getName();
+				if (status.equals("terminated")) continue;
+				System.out.println("Instance ID : " + instance.getInstanceId() + " ; Instance status : "+status);
+			}
 		} catch (AmazonServiceException ase) {
 			System.out.println("Caught Exception: " + ase.getMessage());
 			System.out.println("Reponse Status Code: " + ase.getStatusCode());
