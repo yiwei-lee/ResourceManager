@@ -20,8 +20,8 @@ public class Test {
 		manager.addProvider(openStackProvider);
 		
 		//Generate task;
-		RTask task1 = new RTask("OpenStack", "84536", "MICRO");
-		RTask task2 = new RTask("EC2", "ami-56e6a404", "MICRO");
+		RTask task1 = new RTask(ProviderType.OpenStack, "84536", "MICRO");
+		RTask task2 = new RTask(ProviderType.EC2, "ami-56e6a404", "MICRO");
 		
 		//Get nodes;
 		RNode node1 = manager.getNode(task1);

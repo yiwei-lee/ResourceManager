@@ -89,7 +89,7 @@ public class OpenStackAdapter extends RAdapter {
 			json = response.getEntity(JSONObject.class);
 			String serverId = json.getJSONObject("server").getString("id");
 			//Get IP;
-			System.out.print("OpenStack : Building server");
+			System.out.print("OpenStack : Building server...");
 			while (!getServerStatus(token, header, serverId).equals("ACTIVE")){
 				Thread.sleep(2500);
 			}

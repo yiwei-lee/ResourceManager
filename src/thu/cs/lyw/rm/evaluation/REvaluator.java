@@ -1,6 +1,8 @@
 package thu.cs.lyw.rm.evaluation;
 
+import java.util.Iterator;
 import thu.cs.lyw.rm.manager.RTask;
+import thu.cs.lyw.rm.util.ProviderType;
 import thu.cs.lyw.rm.util.Strategy;
 
 public class REvaluator {
@@ -14,6 +16,10 @@ public class REvaluator {
 	//Get evaluation;
 	public REvaluation evaluate(RTask task){
 		REvaluation evaluation = new REvaluation(task);
+		if (evaluation.provider == null){
+			//TODO : what to use?
+//			Iterator<ProviderType> providers = providerMap.keySet().iterator();
+		}
 		return evaluation;
 	}
 	//Sets and gets;

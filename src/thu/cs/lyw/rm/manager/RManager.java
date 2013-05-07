@@ -2,10 +2,13 @@ package thu.cs.lyw.rm.manager;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Scanner;
+import java.util.Set;
+
 import thu.cs.lyw.rm.evaluation.REvaluation;
 import thu.cs.lyw.rm.evaluation.REvaluator;
 import thu.cs.lyw.rm.resource.RNode;
@@ -33,8 +36,8 @@ public class RManager {
 		taskMap = new HashMap<RTask, RNode>();
 		evaluator = new REvaluator();
 	}
-	//Provider should be added before using the system to manage resources.
 	public void addProvider(Provider provider){
+		//Provider should be added before using the system to manage resources.
 		resourcePool.initProvider(provider);
 		ArrayList<Provider> providers = providerMap.get(provider.getType());
 		if (providers == null){

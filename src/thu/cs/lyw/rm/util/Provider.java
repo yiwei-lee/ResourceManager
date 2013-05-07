@@ -9,6 +9,7 @@ public class Provider {
 	private String username;
 	private String password;
 	private HashMap<String, Object> properties;
+	
 	public Provider (ProviderType providerType){
 		this.providerType = providerType;
 		properties = new HashMap<String, Object>();

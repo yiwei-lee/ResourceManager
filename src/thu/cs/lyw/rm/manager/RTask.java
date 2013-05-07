@@ -13,8 +13,9 @@ public class RTask {
 	public double cpu;
 	public double memory;
 	public double disk;
-	public RTask(String providerType, String system, String perferredType, String keyName, String securityGroup){
-		this.providerType = ProviderType.valueOf(providerType);
+	
+	public RTask(ProviderType providerType, String system, String perferredType, String keyName, String securityGroup){
+		this.providerType = providerType;
 		this.perferredType = NodeType.valueOf(perferredType);
 		image = new SystemImage(system);
 		this.securityGroup = securityGroup;
@@ -23,8 +24,8 @@ public class RTask {
 		memory = 0.0;
 		disk = 0.0;
 	}
-	public RTask(String providerType, String system, String perferredType){
-		this.providerType = ProviderType.valueOf(providerType);
+	public RTask(ProviderType providerType, String system, String perferredType){
+		this.providerType = providerType;
 		this.perferredType = NodeType.valueOf(perferredType);
 		image = new SystemImage(system);
 		securityGroup = "default";
@@ -33,11 +34,34 @@ public class RTask {
 		memory = 0.0;
 		disk = 0.0;
 	}
-	public RTask(String providerType, String system){
-		this.providerType = ProviderType.valueOf(providerType);;
+	public RTask(ProviderType providerType, String system){
+		this.providerType = providerType;
 		this.perferredType = NodeType.MICRO;
 		image = new SystemImage(system);
+		cpu = 0.0;
+		memory = 0.0;
+		disk = 0.0;
 	}
+	
+	public RTask(String system, String perferredType){
+		this.providerType = null;
+		this.perferredType = NodeType.valueOf(perferredType);
+		image = new SystemImage(system);
+		securityGroup = "default";
+		keyName = "rm-test";
+		cpu = 0.0;
+		memory = 0.0;
+		disk = 0.0;
+	}
+	public RTask(String system){
+		this.providerType = null;
+		this.perferredType = NodeType.MICRO;
+		image = new SystemImage(system);
+		cpu = 0.0;
+		memory = 0.0;
+		disk = 0.0;
+	}
+	
 	public NodeType getPerferredType(){
 		return perferredType;
 	}
