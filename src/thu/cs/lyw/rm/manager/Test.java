@@ -1,5 +1,10 @@
 package thu.cs.lyw.rm.manager;
 
+import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
+
 import thu.cs.lyw.rm.resource.RNode;
 import thu.cs.lyw.rm.util.Provider;
 import thu.cs.lyw.rm.util.ProviderType;
@@ -30,9 +35,29 @@ public class Test {
 			System.err.println("Error : cannot get available node.");
 			return;
 		}
+		
 		System.out.println("Test : Now u got VM instances. So...it's time to kill them!");
-//		RTaskFeedback feedback = new RTaskFeedback();
 		manager.releaseNode(node1);
 		manager.releaseNode(node2);
+		
+//		JSch jsch = new JSch();
+//		try {
+//			jsch.addIdentity("rm-test-ec2.pem");
+//			Session session = jsch.getSession("ubuntu", node2.getIP(), 22);
+//			session.setConfig("StrictHostKeyChecking", "no");
+//			session.connect();
+//			Channel channel = session.openChannel("shell");
+//			channel.setOutputStream(System.out);
+//			channel.setInputStream(System.in);
+//			channel.connect();
+//			channel.disconnect();
+//			session.disconnect();
+//		} catch (JSchException e) {
+//			e.printStackTrace();
+//		}
+		
+		//TODO 对provider的增删改查操作;
+		//TODO 资源请求、释放、部署镜像等操作，对instance的增删改查；
+		//TODO 
 	}
 }

@@ -1,5 +1,11 @@
 package thu.cs.lyw.rm.adapter;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Date;
+
+import javax.xml.bind.annotation.adapters.HexBinaryAdapter;
+
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -11,10 +17,19 @@ import thu.cs.lyw.rm.resource.RNode;
 import thu.cs.lyw.rm.util.NodeType;
 import thu.cs.lyw.rm.util.Provider;
 
-public class OpenStackAdapter extends RAdapter {
+public class OpenStackAdapter extends RAdapter{
 	private static Client client  = Client.create();
 	private static WebResource webResource;
-	private static int serverNo = 0;
+	private static MessageDigest md5 = null;
+	public OpenStackAdapter(){
+		if (md5 == null){
+			try {
+				md5 = MessageDigest.getInstance("MD5");
+			} catch (NoSuchAlgorithmException e) {
+				e.printStackTrace();
+			}
+		}
+	}
 	@Override
 	public void initProvider(Provider provider) {
 		if (provider.isInit()) return;
@@ -79,8 +94,9 @@ public class OpenStackAdapter extends RAdapter {
 		String flavor = "100";
 		if (evaluation.type == NodeType.MICRO) flavor = "100";
 		try {
+			String hexedDate = new HexBinaryAdapter().marshal(md5.digest(new Date().toString().getBytes()));
 			JSONObject json = new JSONObject().put("server", new JSONObject()
-					.put("flavorRef", flavor).put("imageRef", evaluation.image.getImageName()).put("name", "server-no-"+(serverNo++))
+					.put("flavorRef", flavor).put("imageRef", evaluation.image.getImageName()).put("name", "server-" + hexedDate)
 					.put("min_count", "1").put("max_count", "1")
 					.put("key_name", evaluation.task.keyName));
 //					.put("security_groups",new JSONArray().put(new JSONObject().put("name", evaluation.task.securityGroup))));
